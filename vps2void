@@ -73,7 +73,7 @@ configure_chroot() {
 	if ! is_openvz && ! pidof haveged >/dev/null; then
 		# Disable signature check, install and launch haveged and re-enable signature checks.
 		sed -i.bak "s/^[[:space:]]*SigLevel[[:space:]]*=.*$/SigLevel = Never/" "/root.$cpu_type/etc/pacman.conf"
-		chroot_exec 'pacman --noconfirm -Sy haveged && haveged'
+		chroot_exec 'xbps-install -Sy haveged && haveged'
 		mv "/root.$cpu_type/etc/pacman.conf.bak" "/root.$cpu_type/etc/pacman.conf"
 	fi
 	chroot_exec 'pacman-key --init && pacman-key --populate archlinux'
@@ -178,57 +178,25 @@ configure_network() {
 	set -- $(ip addr show dev "$dev" | awk '($1 == "inet") { print $2 }')
 	ip=$@
 
-	# FIXME Not supported for "P2P" interfaces, such as venet, yet
-	if [ "$network" = "systemd-networkd" ]; then
-		cat > /etc/systemd/network/default.network <<-EOF
-			[Match]
-			Name=$dev
-
-			[Network]
-			Gateway=$gateway
-		EOF
-		for ip in $ip; do
-			echo "Address=$ip"
-		done >> /etc/systemd/network/default.network
-		systemctl enable systemd-networkd
-	elif [ "$network" = "netctl" ]; then
-		cat > /etc/netctl/default <<-EOF
-			Interface=$dev
-			Connection=ethernet
-			IP=static
-			Address=($ip)
-		EOF
-		if [ "$gateway" = "0.0.0.0" ]; then
-			echo 'Routes=(0.0.0.0/0)'
-		else
-			echo "Gateway=$gateway"
-		fi >> /etc/netctl/default
-		netctl enable default
-	fi
-
-	systemctl enable sshd
+	# Enable sshd (so we can get back in
+	ln -s /etc/sv/sshd /var/service/
 }
 
 finalize() {
-	# OpenVZ hacks
-	if is_openvz; then
-		# FIXME systemd 220+ doesn't work anymore with OpenVZ!
-		pacman --noconfirm -U "http://seblu.net/a/arm/all/systemd-219-6-$cpu_type.pkg.tar.xz"
-		sed -i 's/^\([[:space:]]*\)#IgnorePkg\([[:space:]]*\)=$/\1IgnorePkg\2= systemd/' /etc/pacman.conf
-	fi
-
 	cat <<-EOF
 		Hi,
-		your VM has successfully been reimaged with Arch Linux.
+		your VM has successfully been reimaged with VoidLinux.
 
-		This script configured $bootloader as bootloader and $network for networking.
+		This script configured $bootloader as bootloader. 
+    Networking is left up to you to configure.
 
 		When you are finished with your post-installation, you'll need to reboot the VM the rough way:
 		# sync ; reboot -f
 
 		Then you'll be able to connect to your VM using SSH and to login using your old root password (or "vps2arch" if you didn't have a root password).
 
-		You'll need to configure your mirrors in order to use pacman, please see https://wiki.archlinux.org/index.php/Mirrors
+    *** NOTICE: YOU SHOULD SET YOUR ROOT PASSWD NOW SO THAT YOU CAN GET BACK IN.  ALSO IF YOU ARE USING SSH, PUSH YOUR PUBKEYS IN APPROPRIATE PLACES ***
+
 	EOF
 }
 
@@ -248,26 +216,16 @@ while getopts ":b:m:n:h" opt; do
 	m)
 		mirrors="${mirrors:+$mirrors }$OPTARG"
 		;;
-	n)
-		if ! [ "$OPTARG" = "systemd-networkd" -o "$OPTARG" = "netctl" -o "$OPTARG" = "none" ]; then
-			echo "Invalid networking configuration system specified" >&2
-			exit 1
-		fi
-		network="$OPTARG"
-		;;
 	h)
 		cat <<-EOF
 			usage: ${0##*/} [options]
 
 			  Options:
 			    -b (grub|syslinux)           Use the specified bootloader. When this option is omitted, it defaults to grub.
-			    -n (systemd-networkd|netctl) Use the specified networking configuration system. When this option is omitted, it defaults to systemd-networkd.
 			    -m mirror                    Use the provided mirror (you can specify this option more than once).
 
 			    -h                           Print this help message
 
-			    Warning:
-			      On OpenVZ containers the bootloader will be not installed and the networking configuration system will be enfoced to netctl.
 		EOF
 		exit 0
 		;;
@@ -283,11 +241,10 @@ while getopts ":b:m:n:h" opt; do
 done
 shift $((OPTIND - 1))
 
-: ${mirrors:="http://mirror.rackspace.com/archlinux http://dgix.ru/mirrors/archlinux"}
+: ${mirrors:="http://repo.voidlinux.eu/current http://repo.voidlinux.com/current"}
 
 if is_openvz; then
 	bootloader=none
-	network=netctl
 fi
 
 cd /
@@ -299,5 +256,4 @@ install_packages
 restore_root_pass
 cleanup
 configure_bootloader
-configure_network
 finalize

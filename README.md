@@ -60,7 +60,7 @@ Does it really work?
 
 Almost.  I'm testing it on DigitalOcean presently, and will probably work it on Linode next.  I'm using Debian 7.0 as the base, so as to avoid all the systemd insanity.
 
-On the [Tested VPS Providers](https://github.com/drizzt/vps2void/wiki/Tested-VPS-Providers) wiki page you can find a list of **Tested VPS Providers**.
+On the [Tested VPS Providers](https://github.com/deathsyn/vps2void/wiki/Tested-VPS-Providers) wiki page you can find a list of **Tested VPS Providers**.
 
 Theoretically it should also work on **real** computers (running linux), but I think it's not worth it,
 because you can install it in the canonical way.

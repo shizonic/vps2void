@@ -6,14 +6,15 @@ The fastest way to convert a _VPS_ to [Void Linux](https://www.voidlinux.eu/)!
 Author
 ------
 
-[Kevin Berry](mailto:kevin@opensourcealchemist.com)
-Based on the excellent vps2arch script by [Timothy Redaelli](mailto:tredaelli@archlinux.info)
+* [Kevin Berry](mailto:kevin@opensourcealchemist.com)
+* Based on the excellent vps2arch script by [Timothy Redaelli](mailto:tredaelli@archlinux.info)
 
 Description
 -----------
 
 This script is used to convert a _VPS_, running another linux distro, to _Void Linux_.  
 It should be **only** used if your _VPS_ provider doesn't provide you an _Void Linux_ image.
+So far this is tested using Debian GNU/Linux 7.0 as the base
 
 Disclaimer
 ----------
